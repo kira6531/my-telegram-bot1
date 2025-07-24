@@ -1,0 +1,45 @@
+from flask import Flask, request, jsonify
+from telegram import Bot
+from datetime import datetime
+
+app = Flask(__name__)
+
+BOT_TOKEN = "8244769720:AAGekXMZ-skfOxuUUQsXWNGZTKXCVgjMboc"
+CHAT_ID = "-100xxxxxxxxxx"  # Apnar Telegram group er chat ID
+
+bot = Bot(token=BOT_TOKEN)
+signal_count = {}
+
+def get_today():
+    return datetime.now().strftime("%Y-%m-%d")
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    data = request.json
+    today = get_today()
+
+    if today not in signal_count:
+        signal_count.clear()
+        signal_count[today] = 0
+
+    cutoff_date = "2025-08-01"
+
+    msg = f"🟢 {data['type']} SIGNAL – {data['symbol']}
+"           f"📈 Entry: {data['entry']}
+"           f"🎯 TP: {data['tp']}
+"           f"❌ SL: {data['sl']}
+"           f"🔔 Powered by ULTIMATE FOREX – Arafat Rahman"
+
+    if datetime.now().strftime("%Y-%m-%d") < cutoff_date:
+        bot.send_message(chat_id=CHAT_ID, text=msg)
+        return jsonify({"status": "signal sent 24/7"})
+
+    if signal_count[today] < 5:
+        bot.send_message(chat_id=CHAT_ID, text=msg)
+        signal_count[today] += 1
+        return jsonify({"status": f"signal sent {signal_count[today]}/5"})
+    else:
+        return jsonify({"status": "signal limit reached for today"})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
